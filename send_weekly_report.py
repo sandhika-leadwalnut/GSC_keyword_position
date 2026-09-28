@@ -110,15 +110,16 @@ Generated automatically every Tuesday.</p></div></body></html>"""
 
 
 def send(html: str, start, end) -> None:
-    host, user, pw = os.environ.get("SMTP_HOST"), os.environ.get("SMTP_USER"), os.environ.get("SMTP_PASSWORD")
-    port = int(os.environ.get("SMTP_PORT") or 587)
+    env = lambda n: (os.environ.get(n) or "").strip()  # secrets often carry a trailing newline
+    host, user, pw = env("SMTP_HOST"), env("SMTP_USER"), env("SMTP_PASSWORD").replace(" ", "")
+    port = int(env("SMTP_PORT") or 587)
     to = [a.strip() for a in os.environ.get("MAIL_TO", "").split(",") if a.strip()]
     missing = [n for n, v in (("SMTP_HOST", host), ("SMTP_USER", user), ("SMTP_PASSWORD", pw), ("MAIL_TO", to)) if not v]
     if missing:
         raise SystemExit(f"Cannot send email, missing: {', '.join(missing)}")
     msg = EmailMessage()
     msg["Subject"] = f"Fortinet keyword positions: {format_range(start, end)}"
-    msg["From"] = formataddr(("LeadWalnut SEO Reports", os.environ.get("MAIL_FROM") or user))
+    msg["From"] = formataddr(("LeadWalnut SEO Reports", env("MAIL_FROM") or user))
     msg["To"] = ", ".join(to)
     msg.set_content("This report is HTML. The attached workbook has the full detail.")
     msg.add_alternative(html, subtype="html")

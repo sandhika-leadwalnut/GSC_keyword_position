@@ -74,10 +74,10 @@ def load_keys_file(path: Path) -> None:
 HERE = Path(__file__).resolve().parent
 load_keys_file(HERE / "keys.env")
 
-SERVICE_ACCOUNT_FILE = os.environ.get("SERVICE_ACCOUNT_FILE", "fortinet-gsc-api-c8ebcebdce98.json")
-SITE_URL = os.environ.get("SITE_URL", "https://www.fortinet.com")
-AHREFS_API_TOKEN = os.environ.get("AHREFS_API_TOKEN", "")
-SEMRUSH_API_KEY = os.environ.get("SEMRUSH_API_KEY", "")
+SERVICE_ACCOUNT_FILE = os.environ.get("SERVICE_ACCOUNT_FILE", "fortinet-gsc-api-c8ebcebdce98.json").strip()
+SITE_URL = os.environ.get("SITE_URL", "https://www.fortinet.com").strip()
+AHREFS_API_TOKEN = os.environ.get("AHREFS_API_TOKEN", "").strip()
+SEMRUSH_API_KEY = os.environ.get("SEMRUSH_API_KEY", "").strip()
 
 AHREFS_ENDPOINT = "https://api.ahrefs.com/v3/site-explorer/organic-keywords"
 SEMRUSH_ENDPOINT = "https://api.semrush.com/"          # v3 keys
