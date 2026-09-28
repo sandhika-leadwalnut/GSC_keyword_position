@@ -1,0 +1,91 @@
+name: Weekly Fortinet Keyword Positions
+
+# Every Tuesday 03:30 UTC = 09:00 IST. Tuesday because GSC data for the
+# Sun-Sat week ending Saturday is only final ~3 days later.
+on:
+  schedule:
+    - cron: "30 3 * * 2"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build the report but send no email and commit nothing"
+        type: boolean
+        default: false
+      week_start:
+        description: "Optional: run a specific week, Sunday date YYYY-MM-DD (for backfilling)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # lets the job commit the updated master workbook
+
+concurrency:
+  group: weekly-positions
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      MAIL_TO: karthi@leadwalnut.com,kritika@leadwalnut.com,sandhika@leadwalnut.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write GSC service account key
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GSC_SERVICE_ACCOUNT_JSON" ]; then echo "::error::GSC_SERVICE_ACCOUNT_JSON secret is missing"; exit 1; fi
+          printf '%s' "$GSC_SERVICE_ACCOUNT_JSON" > gsc_key.json
+          python -c "import json;print('GSC key OK for', json.load(open('gsc_key.json'))['client_email'])"
+
+      - name: Run lookup and send email
+        env:
+          SERVICE_ACCOUNT_FILE: gsc_key.json
+          SITE_URL: https://www.fortinet.com
+          AHREFS_API_TOKEN: ${{ secrets.AHREFS_API_TOKEN }}
+          SEMRUSH_API_KEY: ${{ secrets.SEMRUSH_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+        run: |
+          ARGS=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ -n "${{ github.event.inputs.week_start }}" ]; then ARGS="$ARGS --week-start ${{ github.event.inputs.week_start }}"; fi
+          python send_weekly_report.py $ARGS
+
+      - name: Save master workbook back to the repo
+        if: success() && github.event.inputs.dry_run != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Fortinet_Keyword_Positions.xlsx
+          git diff --cached --quiet || git commit -m "Weekly positions: $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: Keep files as a run artifact (90 days)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: positions-${{ github.run_number }}
+          path: |
+            Fortinet_Keyword_Positions.xlsx
+            positions_*.xlsx
+            report_preview.html
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Remove key
+        if: always()
+        run: rm -f gsc_key.json

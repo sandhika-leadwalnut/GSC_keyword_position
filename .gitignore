@@ -1,0 +1,16 @@
+# secrets: never commit
+keys.env
+*.json
+!package.json
+# local stuff
+venv/
+__pycache__/
+report_preview.html
+positions_*.xlsx
+# old one-off files
+Fortinet_Keyword_position.xlsx
+Fortinet_Keyword_position_final.xlsx
+Fortinet_Keyword_position_serpapi*.xlsx
+fortinet_brightedge_export.csv
+Not_ranking_keywords_for_BrightEdge.csv
+gsc_position_lookup.py
