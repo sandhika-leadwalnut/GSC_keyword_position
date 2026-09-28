@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      MAIL_TO: karthi@leadwalnut.com,kritika@leadwalnut.com,sandhika@leadwalnut.com
+      MAIL_TO: karthik@leadwalnut.com,kritika@leadwalnut.com,sandhika@leadwalnut.com
     steps:
       - uses: actions/checkout@v4
 
